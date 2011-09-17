@@ -1081,6 +1081,7 @@ yank(const Arg *arg) {
             return TRUE;
         feedback = g_strconcat("Yanked ", url, NULL);
         give_feedback(feedback);
+        g_free((gpointer *)feedback);
         if (arg->i & ClipboardPrimary)
             gtk_clipboard_set_text(clipboards[0], url, -1);
         if (arg->i & ClipboardGTK)
@@ -1095,6 +1096,7 @@ yank(const Arg *arg) {
             feedback = g_strconcat("Yanked ", content, NULL);
             g_free((gpointer *)content);
             give_feedback(feedback);
+            g_free((gpointer *)feedback);
         }
     }
     return TRUE;
@@ -1115,8 +1117,10 @@ paste(const Arg *arg) {
         a.s = gtk_clipboard_wait_for_text(clipboards[0]);
     if (!a.s && arg->i & ClipboardGTK)
         a.s = gtk_clipboard_wait_for_text(clipboards[1]);
-    if (a.s)
+    if (a.s) {
         open_arg(&a);
+        g_free(a.s);
+    }
     return TRUE;
 }
 
@@ -1129,6 +1133,7 @@ quit(const Arg *arg) {
         /* write last URL into status file for recreation with "u" */
         filename = g_strdup_printf(CLOSED_URL_FILENAME);
         f = fopen(filename, "w");
+        g_free((gpointer *)filename);
         if (f != NULL) {
             fprintf(f, "%s", uri);
             fclose(f);
@@ -1147,6 +1152,7 @@ revive(const Arg *arg) {
     /* get the URL of the window which has been closed last */
     filename = g_strdup_printf(CLOSED_URL_FILENAME);
     f = fopen(filename, "r");
+    g_free((gpointer *)filename);
     if (f != NULL) {
         fgets(buffer, 512, f);
         fclose(f);
@@ -1450,6 +1456,7 @@ bookmark(const Arg *arg) {
     const char *title = webkit_web_view_get_title(webview);
     filename = g_strdup_printf(BOOKMARKS_STORAGE_FILENAME);
     f = fopen(filename, "a");
+    g_free((gpointer *)filename);
     if (uri == NULL || strlen(uri) == 0) {
         set_error("No URI found to bookmark.");
         return FALSE;
@@ -1529,6 +1536,7 @@ void history() {
                     fclose(f);
                 }
                 f = fopen(filename, "w");
+                g_free((gpointer *)filename);
                 if (f != NULL) {
                     fprintf(f, "%s", new);
                     fclose(f);
@@ -1587,6 +1595,7 @@ search_tag(const Arg * a) {
 
     filename = g_strdup_printf(BOOKMARKS_STORAGE_FILENAME);
     f = fopen(filename, "r");
+    g_free((gpointer *)filename);
     if (f == NULL) {
         set_error("Couldn't open bookmarks file.");
         return FALSE;
@@ -1858,7 +1867,7 @@ void
 setup_settings() {
     WebKitWebSettings *settings = (WebKitWebSettings*)webkit_web_settings_new();
     SoupURI *proxy_uri;
-    char *filename, *new;
+    char *filename, *file_url, *new;
     int  len;
 
     session = webkit_get_default_session();
@@ -1867,7 +1876,9 @@ setup_settings() {
     g_object_set(G_OBJECT(settings), "enable-plugins", enablePlugins, NULL);
     g_object_set(G_OBJECT(settings), "enable-page-cache", enablePagecache, NULL);
     filename = g_strdup_printf(USER_STYLES_FILENAME);
-    filename = g_strdup_printf("file://%s", filename);
+    file_url = g_strdup_printf("file://%s", filename);
+    g_object_set(G_OBJECT(settings), "user-stylesheet-uri", file_url, NULL);
+    g_free(file_url);
     g_object_set(G_OBJECT(settings), "user-stylesheet-uri", filename, NULL);
     g_object_set(G_OBJECT(settings), "user-agent", USER_AGENT, NULL);
     g_object_get(G_OBJECT(settings), "zoom-step", &zoomstep, NULL);
@@ -2076,7 +2087,7 @@ complete_list(const char *searchfor, const int mode, Listelement *elementlist)
     }
     f = fopen(filename, "r");
     if (f == NULL) {
-        g_free((gpointer)filename);
+        g_free((gpointer *)filename);
         return (elementlist);
     }
 
