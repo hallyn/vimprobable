@@ -120,6 +120,7 @@ static GtkWidget *status_state;
 static WebKitWebView *webview;
 static SoupSession *session;
 static GtkClipboard *clipboards[2];
+static GdkKeymap *keymap;
 
 static char **args;
 static unsigned int mode = ModeNormal;
@@ -299,6 +300,13 @@ gboolean
 webview_keypress_cb(WebKitWebView *webview, GdkEventKey *event) {
     unsigned int i;
     Arg a = { .i = ModeNormal, .s = NULL };
+    guint keyval;
+    GdkModifierType irrelevant;
+
+    /* Get a mask of modifiers that shouldn't be considered for this event.
+     * E.g.: It shouldn't matter whether ';' is shifted or not. */
+    gdk_keymap_translate_keyboard_state(keymap, event->hardware_keycode,
+            event->state, event->group, &keyval, NULL, NULL, &irrelevant);
 
     switch (mode) {
     case ModeNormal:
@@ -320,11 +328,11 @@ webview_keypress_cb(WebKitWebView *webview, GdkEventKey *event) {
         }
         /* keybindings */
         for (i = 0; i < LENGTH(keys); i++)
-            if (keys[i].mask == CLEAN(event->state)
+            if (keys[i].mask == (CLEAN(event->state) & ~irrelevant)
             && (keys[i].modkey == current_modkey
                 || (!keys[i].modkey && !current_modkey)
                 || keys[i].modkey == GDK_VoidSymbol)    /* wildcard */
-            && keys[i].key == event->keyval
+            && keys[i].key == keyval
             && keys[i].func)
                 if (keys[i].func(&keys[i].arg)) {
                     current_modkey = count = 0;
@@ -1840,6 +1848,8 @@ setup_gui() {
     gtk_widget_modify_bg(eventbox, GTK_STATE_NORMAL, &bg);
     gtk_widget_set_name(GTK_WIDGET(window), "Vimprobable");
     gtk_window_set_geometry_hints(window, NULL, &hints, GDK_HINT_MIN_SIZE);
+
+    keymap = gdk_keymap_get_default();
 
 #ifdef DISABLE_SCROLLBAR
     GtkWidget *viewport = gtk_scrolled_window_new(NULL, NULL);
