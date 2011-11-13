@@ -95,6 +95,8 @@ static void ascii_bar(int total, int state, char *string);
 static gchar *jsapi_ref_to_string(JSContextRef context, JSValueRef ref);
 static void jsapi_evaluate_script(const gchar *script, gchar **value, gchar **message);
 static void download_progress(WebKitDownload *d, GParamSpec *pspec);
+static void set_widget_font_and_color(GtkWidget *widget, const char *font_str,
+                const char *bg_color_str, const char *fg_color_str);
 gboolean build_taglist(const Arg *arg, FILE *f);
 void set_error(const char *error);
 void give_feedback(const char *feedback);
@@ -370,6 +372,28 @@ webview_keypress_cb(WebKitWebView *webview, GdkEventKey *event) {
         break;
     }
     return FALSE;
+}
+
+void
+set_widget_font_and_color(GtkWidget *widget, const char *font_str, const char *bg_color_str,
+        const char *fg_color_str) {
+    GdkColor fg_color;
+    GdkColor bg_color;
+    PangoFontDescription *font;
+
+    font = pango_font_description_from_string(font_str);
+    gtk_widget_modify_font(widget, font);
+    pango_font_description_free(font);
+
+    if (fg_color_str)
+        gdk_color_parse(fg_color_str, &fg_color);
+    if (bg_color_str)
+        gdk_color_parse(bg_color_str, &bg_color);
+
+    gtk_widget_modify_text(widget, GTK_STATE_NORMAL, fg_color_str ? &fg_color : NULL);
+    gtk_widget_modify_base(widget, GTK_STATE_NORMAL, bg_color_str ? &bg_color : NULL);
+
+    return;
 }
 
 void
