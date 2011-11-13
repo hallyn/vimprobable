@@ -202,13 +202,17 @@ webview_load_committed_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointe
 
 void
 webview_load_finished_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointer user_data) {
-    Arg a = { .i = Silent, .s = g_strdup(JS_SETUP_INPUT_FOCUS) };
+    /*Arg a = { .i = Silent, .s = g_strdup(JS_SETUP_INPUT_FOCUS) };*/
 
     if (HISTORY_MAX_ENTRIES > 0)
         history();
+    if (mode == ModeInsert) {
+        Arg a = { .i = ModeNormal };
+        set(&a);
+    }
     update_state();
-    script(&a);
-    g_free(a.s);
+    /*script(&a);
+    g_free(a.s);*/
 }
 
 gboolean
@@ -555,6 +559,8 @@ inputbox_keypress_cb(GtkEntry *entry, GdkEventKey *event) {
 gboolean
 notify_event_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data) {
     int i;
+    WebKitHitTestResult *result;
+    WebKitHitTestResultContext context;
      if (mode == ModeNormal && event->type == GDK_BUTTON_RELEASE) {
         /* handle mouse click events */
         for (i = 0; i < LENGTH(mouse); i++) {
@@ -570,6 +576,19 @@ notify_event_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data) {
                     return TRUE;
                 }
             }
+        }
+        result = webkit_web_view_get_hit_test_result(WEBKIT_WEB_VIEW(widget), (GdkEventButton*)event);
+        g_object_get(result, "context", &context, NULL);
+        if (context & WEBKIT_HIT_TEST_RESULT_CONTEXT_EDITABLE) {
+            Arg a = { .i = ModeInsert };
+            set(&a);
+        }
+    } else if (mode == ModeInsert && event->type == GDK_BUTTON_RELEASE) {
+        result = webkit_web_view_get_hit_test_result(WEBKIT_WEB_VIEW(widget), (GdkEventButton*)event);
+        g_object_get(result, "context", &context, NULL);
+        if (!(context & WEBKIT_HIT_TEST_RESULT_CONTEXT_EDITABLE)) {
+            Arg a = { .i = ModeNormal };
+            set(&a);
         }
     }
     return FALSE;
