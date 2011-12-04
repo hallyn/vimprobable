@@ -200,6 +200,10 @@ webview_load_committed_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointe
     update_url(uri);
     script(&a);
     g_free(a.s);
+    if (mode == ModeInsert) {
+        Arg a = { .i = ModeNormal };
+        set(&a);
+    }
 }
 
 void
@@ -208,10 +212,6 @@ webview_load_finished_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointer
 
     if (HISTORY_MAX_ENTRIES > 0)
         history();
-    if (mode == ModeInsert) {
-        Arg a = { .i = ModeNormal };
-        set(&a);
-    }
     update_state();
     /*script(&a);
     g_free(a.s);*/
