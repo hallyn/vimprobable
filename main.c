@@ -208,13 +208,9 @@ webview_load_committed_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointe
 
 void
 webview_load_finished_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointer user_data) {
-    /*Arg a = { .i = Silent, .s = g_strdup(JS_SETUP_INPUT_FOCUS) };*/
-
     if (HISTORY_MAX_ENTRIES > 0)
         history();
     update_state();
-    /*script(&a);
-    g_free(a.s);*/
 }
 
 gboolean
