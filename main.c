@@ -6,6 +6,7 @@
     (c) 2010-2011 by Thomas Adam
     (c) 2011 by Albert Kim
     (c) 2011 by Daniel Carl
+    (c) 2012 by Matthew Carter
     see LICENSE file
 */
 
@@ -209,6 +210,14 @@ webview_load_committed_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointe
 
 void
 webview_load_finished_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointer user_data) {
+    if (escape_input_on_load) {
+        Arg a = { .i = Silent, .s = g_strdup("hints.clearFocus();") };
+        script(&a);
+        g_free(a.s);
+        a.i = ModeNormal;
+        a.s = NULL;
+        set(&a);
+    }
     if (HISTORY_MAX_ENTRIES > 0)
         history();
     update_state();
@@ -616,6 +625,15 @@ notify_event_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data) {
             Arg a = { .i = ModeNormal };
             set(&a);
         }
+    } else {
+        gchar *value = NULL, *message = NULL;
+        jsapi_evaluate_script("window.getSelection().focusNode", &value, &message);
+        if (!strcmp(value, "[object HTMLFormElement]")) {
+            Arg a = { .i = ModeInsert, .s = NULL };
+            set(&a);
+        }
+        g_free(value);
+        g_free(message);
     }
     return FALSE;
 }

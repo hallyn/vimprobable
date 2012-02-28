@@ -9,9 +9,10 @@
 */
 
 /* general settings */
-static char startpage[1024]             = "http://www.vimprobable.org/";
-static const gboolean enablePlugins     = TRUE; /* TRUE keeps plugins enabled */
-static const gboolean enablePagecache   = FALSE; /* TRUE turns on the page cache. */
+static char startpage[1024]                = "http://www.vimprobable.org/";
+static const gboolean enablePlugins        = TRUE; /* TRUE keeps plugins enabled */
+static const gboolean enablePagecache      = FALSE; /* TRUE turns on the page cache. */
+static const gboolean escape_input_on_load = TRUE; /* TRUE will disable automatic focusing of input fields via Javascript*/
 char acceptlanguage[1024]               = "";
 
 /* appearance */
