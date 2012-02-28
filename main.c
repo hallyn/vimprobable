@@ -201,7 +201,7 @@ webview_load_committed_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointe
     update_url(uri);
     script(&a);
     g_free(a.s);
-    if (mode == ModeInsert) {
+    if (mode == ModeInsert || mode == ModeHints) {
         Arg a = { .i = ModeNormal };
         set(&a);
     }
