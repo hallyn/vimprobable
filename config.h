@@ -87,7 +87,7 @@ static URIHandler uri_handlers[] = {
 #define             DEFAULT_FONT_SIZE           12
 
 /* Vimprobable version number */
-#define             VERSION                     "0.9.24.2"
+#define             VERSION                     "0.9.25.0"
 #define             INTERNAL_VERSION            "Vimprobable/" VERSION
 
 /* user agent */
