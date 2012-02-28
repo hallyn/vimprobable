@@ -110,6 +110,11 @@ typedef struct {
 } Searchengine;
 
 typedef struct {
+    char *handle;
+    char *handler;
+} URIHandler;
+
+typedef struct {
     void *next;
     char element[255];
 } Listelement;

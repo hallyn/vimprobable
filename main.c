@@ -106,6 +106,7 @@ int count_list(Listelement *elementlist);
 void free_list(Listelement *elementlist);
 void fill_suggline(char * suggline, const char * command, const char *fill_with);
 GtkWidget * fill_eventbox(const char * completion_line);
+static gboolean open_handler(char *uri);
 
 static void history(void);
 static void mop_up(void);
@@ -216,7 +217,12 @@ webview_load_finished_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointer
 gboolean
 webview_navigation_cb(WebKitWebView *webview, WebKitWebFrame *frame, WebKitNetworkRequest *request,
                         WebKitWebPolicyDecision *decision, gpointer user_data) {
-    return FALSE;
+    char *uri = (char *)webkit_network_request_get_uri(request);
+    /* check for external handlers */
+    if (open_handler(uri))
+        return TRUE;
+    else
+        return FALSE;
 }
 
 static gboolean
@@ -1111,7 +1117,7 @@ number(const Arg *arg) {
 
 gboolean
 open_arg(const Arg *arg) {
-    char *argv[6];
+    char *argv[64];
     char *s = arg->s, *p, *new;
     Arg a = { .i = NavigationReload };
     int len, i;
@@ -1138,8 +1144,13 @@ open_arg(const Arg *arg) {
             --p;
         *(p + 1) = '\0';
         len = strlen(s);
-        new = NULL, p = strchr(s, ' ');
-        if (p)                                                           /* check for search engines */
+        new = NULL;
+        /* check for external handlers */
+        if (open_handler(s))
+            return TRUE;
+        /* check for search engines */
+        p = strchr(s, ' ');
+        if (p)
             for(i = 0; i < LENGTH(searchengines); i++)
                 if (!strncmp(s, searchengines[i].handle, p - s)) {
                     p = soup_uri_encode(++p, "&");
@@ -1175,6 +1186,52 @@ open_arg(const Arg *arg) {
     } else
         g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
     return TRUE;
+}
+
+gboolean
+open_handler(char *uri) {
+    char *argv[64];
+    char *p = NULL, *arg, arg_temp[BUFFERSIZE], *temp, temp2[BUFFERSIZE] = "", *temp3;
+    int j, i;
+
+    p = strchr(uri, ':');
+    if (p) {
+    	if (uri_handlers != NULL) {
+        	for (i = 0; i < LENGTH(uri_handlers); i++) {
+            	if (strlen(uri) >= strlen(uri_handlers[i].handle) && strncmp(uri_handlers[i].handle, uri, strlen(uri_handlers[i].handle)) == 0) {
+                	if (strlen(uri_handlers[i].handler) > 0) {
+                    	arg = (uri + strlen(uri_handlers[i].handle));
+                    	strncpy(temp2, uri_handlers[i].handler, BUFFERSIZE);
+                    	temp = strtok(temp2, " ");
+                    	j = 0;
+                    	while (temp != NULL) {
+                        	if (strstr(temp, "%s")) {
+                            	temp3 = temp;
+                            	memset(arg_temp, 0, BUFFERSIZE);
+                            	while (strncmp(temp3, "%s", 2) != 0) {
+                                	strncat(arg_temp, temp3, 1);
+                                	temp3++;
+                            	}
+                            	strcat(arg_temp, arg);
+                            	temp3++;
+                            	temp3++;
+                            	strcat(arg_temp, temp3);
+                            	argv[j] = arg_temp;
+                        	} else {
+                            	argv[j] = temp;
+                        	}
+                        	temp = strtok(NULL, " ");
+                        	j++;
+                    	}
+                    	argv[j] =  NULL;
+                    	g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+                	}
+                	return TRUE;
+            	}
+        	}
+    	}
+    }
+    return FALSE;
 }
 
 gboolean
@@ -2111,10 +2168,10 @@ setup_signals() {
 void
 setup_cookies()
 {
-	if (file_cookie_jar)
-		g_object_unref(file_cookie_jar);
+    if (file_cookie_jar)
+        g_object_unref(file_cookie_jar);
 
-	if (session_cookie_jar)
+    if (session_cookie_jar)
 		g_object_unref(session_cookie_jar);
 
 	session_cookie_jar = soup_cookie_jar_new();
@@ -2133,22 +2190,23 @@ setup_cookies()
  *      is limited to handling cookies.
  */
 void
-new_generic_request(SoupSession *session, SoupMessage *soup_msg, gpointer unused) {
-	SoupMessageHeaders *soup_msg_h;
-	SoupURI *uri;
-	char *cookie_str;
+new_generic_request(SoupSession *session, SoupMessage *soup_msg, gpointer unused) 
+{
+    SoupMessageHeaders *soup_msg_h;
+    SoupURI *uri;
+    char *cookie_str;
 
-	soup_msg_h = soup_msg->request_headers;
-	soup_message_headers_remove(soup_msg_h, "Cookie");
-	uri = soup_message_get_uri(soup_msg);
-	if( (cookie_str = get_cookies(uri)) ) {
-		soup_message_headers_append(soup_msg_h, "Cookie", cookie_str);
-		g_free(cookie_str);
-	}
+    soup_msg_h = soup_msg->request_headers;
+    soup_message_headers_remove(soup_msg_h, "Cookie");
+    uri = soup_message_get_uri(soup_msg);
+    if ((cookie_str = get_cookies(uri))) {
+        soup_message_headers_append(soup_msg_h, "Cookie", cookie_str);
+        g_free(cookie_str);
+    }
 
-	g_signal_connect_after(G_OBJECT(soup_msg), "got-headers", G_CALLBACK(handle_cookie_request), NULL);
+    g_signal_connect_after(G_OBJECT(soup_msg), "got-headers", G_CALLBACK(handle_cookie_request), NULL);
 
-	return;
+    return;
 }
 
 char *
