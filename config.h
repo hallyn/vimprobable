@@ -18,7 +18,8 @@ char acceptlanguage[1024]               = "";
 /* appearance */
 static const char statusbgcolor[]       = "#000000";            /* background color for status bar */
 static const char statuscolor[]         = "#ffffff";            /* color for status bar */
-static const char sslbgcolor[]          = "#b0ff00";            /* background color for status bar with SSL url */
+char sslbgcolor[]                       = "#b0ff00";            /* background color for status bar with SSL url */
+char sslinvalidbgcolor[]                = "#ff0000";            /* background color for status bar with unverified SSL url */
 static const char sslcolor[]            = "#000000";            /* color for status bar with SSL url */
 
                                         /*  normal,                 warning,                error       */
@@ -60,6 +61,10 @@ static URIHandler uri_handlers[] = {
     { "mailto:",          "x-terminal-emulator -e mutt %s" },
     { "ftp://",           "x-terminal-emulator -e wget ftp://%s" },
 };
+
+/* ssl */
+static gboolean strict_ssl              = TRUE; /* FALSE will accept any SSL certificate at face value */
+static char ca_bundle[]                 = "/etc/ssl/certs/ca-certificates.crt";
 
 /* cookies */
 #define             ENABLE_COOKIE_SUPPORT
