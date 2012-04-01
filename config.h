@@ -92,7 +92,7 @@ static char ca_bundle[]                 = "/etc/ssl/certs/ca-certificates.crt";
 #define             DEFAULT_FONT_SIZE           12
 
 /* Vimprobable version number */
-#define             VERSION                     "0.9.25.0"
+#define             VERSION                     "1.0.0"
 #define             INTERNAL_VERSION            "Vimprobable/" VERSION
 
 /* user agent */
