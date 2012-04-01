@@ -143,6 +143,7 @@ static char rememberedURI[1024] = "";
 static char followTarget[8] = "";
 char *error_msg = NULL;
 char *config_base = NULL;
+static gboolean manual_focus = FALSE;
 
 GList *activeDownloads;
 
@@ -206,11 +207,16 @@ webview_load_committed_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointe
         Arg a = { .i = ModeNormal };
         set(&a);
     }
+    manual_focus = FALSE;
 }
 
 void
 webview_load_finished_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointer user_data) {
-    if (escape_input_on_load) {
+    WebKitWebSettings *settings = webkit_web_view_get_settings(webview);
+    gboolean scripts;
+    
+    g_object_get(settings, "enable-scripts", &scripts, NULL);
+    if (escape_input_on_load && scripts && !manual_focus && !gtk_widget_is_focus(inputbox)) {
         Arg a = { .i = Silent, .s = g_strdup("hints.clearFocus();") };
         script(&a);
         g_free(a.s);
@@ -617,6 +623,7 @@ notify_event_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data) {
         if (context & WEBKIT_HIT_TEST_RESULT_CONTEXT_EDITABLE) {
             Arg a = { .i = ModeInsert };
             set(&a);
+            manual_focus = TRUE;
         }
     } else if (mode == ModeInsert && event->type == GDK_BUTTON_RELEASE) {
         result = webkit_web_view_get_hit_test_result(WEBKIT_WEB_VIEW(widget), (GdkEventButton*)event);
@@ -631,6 +638,7 @@ notify_event_cb(GtkWidget *widget, GdkEvent *event, gpointer user_data) {
         if (value && !strcmp(value, "[object HTMLFormElement]")) {
             Arg a = { .i = ModeInsert, .s = NULL };
             set(&a);
+            manual_focus = TRUE;
         }
         g_free(value);
         g_free(message);
@@ -1492,6 +1500,7 @@ script(const Arg *arg) {
         } else if (strncmp(value, "insert;", 7) == 0) {
             a.i = ModeInsert;
             set(&a);
+            manual_focus = TRUE;
         } else if (strncmp(value, "save;", 5) == 0) {
             /* forced download */
             a.i = ModeNormal;
@@ -1794,6 +1803,7 @@ focus_input(const Arg *arg) {
     script(&a);
     g_free(a.s);
     update_state();
+    manual_focus = TRUE;
     return TRUE;
 }
 
