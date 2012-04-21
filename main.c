@@ -893,7 +893,7 @@ complete(const Arg *arg) {
                 gtk_box_pack_start(_table, GTK_WIDGET(row_eventbox), FALSE, FALSE, 0);
                 widgets[n++] = row_eventbox;
                 elementpointer = elementpointer->next;
-                if (n >= MAX_LIST_SIZE)
+                if (n >= listlen)
                     break;
             }
             free_list(elementlist);
