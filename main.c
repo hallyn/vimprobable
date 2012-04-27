@@ -1002,8 +1002,10 @@ echo(const Arg *arg) {
     gtk_widget_modify_text(inputbox, GTK_STATE_NORMAL, urlboxcolor[index] ? &color : NULL);
     if (urlboxbgcolor[index])
         gdk_color_parse(urlboxbgcolor[index], &color);
-    gtk_widget_modify_base(inputbox, GTK_STATE_NORMAL, urlboxbgcolor[index] ? &color : NULL);
-    gtk_entry_set_text(GTK_ENTRY(inputbox), !arg->s ? "" : arg->s);
+    if (!gtk_widget_is_focus(GTK_WIDGET(inputbox))) {
+        gtk_widget_modify_base(inputbox, GTK_STATE_NORMAL, urlboxbgcolor[index] ? &color : NULL);
+        gtk_entry_set_text(GTK_ENTRY(inputbox), !arg->s ? "" : arg->s);
+    }
 	/* TA:  Always free arg->s here, rather than relying on the caller to do
 	 * this.
 	 */
