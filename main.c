@@ -50,9 +50,10 @@ static gboolean webview_mimetype_cb(WebKitWebView *webview, WebKitWebFrame *fram
                         char *mime_type, WebKitWebPolicyDecision *decision, gpointer user_data);
 static gboolean webview_navigation_cb(WebKitWebView *webview, WebKitWebFrame *frame, WebKitNetworkRequest *request,
                         WebKitWebPolicyDecision *decision, gpointer user_data);
+static void webview_open_js_window_cb(WebKitWebView* temp_view, GParamSpec param_spec);
 static gboolean webview_new_window_cb(WebKitWebView *webview, WebKitWebFrame *frame, WebKitNetworkRequest *request,
                         WebKitWebNavigationAction *action, WebKitWebPolicyDecision *decision, gpointer user_data);
-static gboolean webview_open_in_new_window_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointer user_data);
+static WebKitWebView* webview_open_in_new_window_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointer user_data);
 static void webview_progress_changed_cb(WebKitWebView *webview, int progress, gpointer user_data);
 static void webview_scroll_cb(GtkAdjustment *adjustment, gpointer user_data);
 static void webview_title_changed_cb(WebKitWebView *webview, WebKitWebFrame *frame, char *title, gpointer user_data);
@@ -240,14 +241,24 @@ webview_navigation_cb(WebKitWebView *webview, WebKitWebFrame *frame, WebKitNetwo
         return FALSE;
 }
 
-static gboolean
-webview_open_in_new_window_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointer user_data) {
-    Arg a = { .i = TargetNew, .s = (char*)webkit_web_view_get_uri(webview) };
-    if (strlen(rememberedURI) > 0) {
-        a.s = rememberedURI;
-    }
+void
+webview_open_js_window_cb(WebKitWebView* temp_view, GParamSpec param_spec) {
+    /* retrieve the URI of the temporary webview */
+    Arg a = { .i = TargetNew, .s = (char*)webkit_web_view_get_uri(temp_view) };
+    /* clean up */
+    webkit_web_view_stop_loading(temp_view);
+    gtk_widget_destroy(GTK_WIDGET(temp_view));
+    /* open the requested window */
     open_arg(&a);
-    return FALSE;
+}
+
+static WebKitWebView *
+webview_open_in_new_window_cb(WebKitWebView *webview, WebKitWebFrame *frame, gpointer user_data) {
+    /* create a temporary webview to execute the script in */
+    WebKitWebView *temp_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
+    /* wait until the new webview receives its new URI */
+    g_object_connect(temp_view, "signal::notify::uri", G_CALLBACK(webview_open_js_window_cb), NULL, NULL);
+    return temp_view;
 }
 
 gboolean
